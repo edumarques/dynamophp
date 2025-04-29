@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: build app
+        run: make start
+
+      - name: validate pull request
+        run: |
+          make php args=".github/ci/pull-request '${{ github.event.pull_request.title }}'"
+
+      - name: run lint
+        run: make lint
+
+      - name: run tests
+        run: make test-cov
+
+      - name: upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/clover/clover.xml
+          fail_ci_if_error: true

@@ -1,0 +1,29 @@
+{
+  "name": "edumarques/dynamophp",
+  "description": "DynamoPHP is a lightweight, type-safe ODM for AWS DynamoDB, built specifically for PHP.",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Eduardo Marques",
+      "email": "eduardomarqs1@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.3"
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "^3.12",
+    "phpstan/phpstan": "^2.1",
+    "phpunit/phpunit": "^12.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "EduardoMarques\\DynamoPHP\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "EduardoMarques\\DynamoPHP\\Tests\\": "tests/"
+    }
+  }
+}

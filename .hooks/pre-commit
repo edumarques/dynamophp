@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+echo "###> Pre commit hook started"
+
+PHP_CS="vendor/bin/phpcs"
+PHP_STAN="vendor/bin/phpstan"
+HAS_PHP_CS=false
+HAS_PHP_STAN=false
+
+CHANGED_PHP_FILES=$(git diff --name-only --diff-filter=d | grep \\.php)
+
+if [ -x $PHP_CS ]; then
+    HAS_PHP_CS=true
+fi
+
+if [ -x $PHP_STAN ]; then
+    HAS_PHP_STAN=true
+fi
+
+if $HAS_PHP_CS; then
+  echo "Running PHPCS..."
+    for FILE in $CHANGED_PHP_FILES
+    do
+    	docker-compose exec app $PHP_CS $FILE
+    	if [ $? != 0 ]; then
+    	  exit 1;
+    	fi
+    done
+else
+    echo "PHPCS not installed."
+fi
+
+if $HAS_PHP_STAN; then
+  echo "Running PHPStan..."
+  ERRORS=$(docker-compose exec -T app $PHP_STAN analyse --error-format=raw $CHANGED_PHP_FILES 2> /dev/null);
+  if [ "$ERRORS" != "" ]; then
+    echo $ERRORS
+    exit 1;
+  fi
+else
+  echo "PHPStan not installed."
+fi
+
+echo "###< Pre commit hook finished"

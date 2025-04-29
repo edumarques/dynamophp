@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+const REGEX = '/^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test): (?!\b\w+(s|ed|ing)\b)[a-z].+/u';
+$title = $argv[1] ?? '';
+
+echo sprintf('Title: %s%s', $title, PHP_EOL);
+echo sprintf('RegEx: %s%s', REGEX, PHP_EOL);
+
+if (!preg_match(REGEX, $title)) {
+    fwrite(STDERR, "Error: title does not follow the required pattern.\n");
+    exit(1);
+}
+
+echo "Title is valid.\n";
+exit(0);
