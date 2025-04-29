@@ -12,7 +12,7 @@ Contributors are always welcome! We want to make contributing to this project as
 
 Pull requests are the best way to propose changes to the codebase. The ideal way to create a PR is:
 
-1. Fork the repo and create your branch from the main version branch (e.g. `v1.x`).
+1. Fork the repo and create your branch from the main version branch.
 2. If you've added code that should be tested, add tests.
 3. Ensure the test suite passes.
 4. Make sure your code lints.
