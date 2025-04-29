@@ -1,0 +1,20 @@
+name: PR
+
+on:
+  pull_request:
+    types: [ opened, edited, reopened, synchronize ]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+
+      - name: build app
+        run: make start
+
+      - name: validate pull request
+        run: |
+          make php args=".github/ci/pull-request '${{ github.event.pull_request.title }}'"
