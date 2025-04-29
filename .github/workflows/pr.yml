@@ -17,4 +17,4 @@ jobs:
 
       - name: validate pull request
         run: |
-          make php args=".github/ci/pull-request '${{ github.event.pull_request.title }}'"
+          make php args=".github/ci/pr '${{ github.event.pull_request.title }}'"
