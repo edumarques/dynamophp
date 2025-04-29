@@ -17,6 +17,9 @@ jobs:
       - name: build app
         run: make start
 
+      - name: install dependencies
+        run: make composer c=install
+
       - name: run lint
         run: make lint
 
