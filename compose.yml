@@ -2,9 +2,10 @@ services:
   app:
     build:
       context: .
+    command: sh -c "composer install && tail -f /dev/null"
+    tty: true
     volumes:
       - .:/app
-    tty: true
     networks:
       - app-network
     depends_on:

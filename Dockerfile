@@ -13,5 +13,3 @@ RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS linux-headers \
     && apk del -f .build-deps
 
 COPY --from=composer /usr/bin/composer /usr/bin/composer
-
-CMD ["tail", "-f", "/dev/null"]
