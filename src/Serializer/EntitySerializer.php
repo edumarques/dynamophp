@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EduardoMarques\DynamoPHP\Serializer;
 
+use Aws\DynamoDb\Marshaler;
 use EduardoMarques\DynamoPHP\Metadata\MetadataException;
 use EduardoMarques\DynamoPHP\Metadata\MetadataLoader;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
@@ -11,10 +12,56 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 class EntitySerializer
 {
+    protected Marshaler $marshaler;
+
     public function __construct(
         protected MetadataLoader $metadataLoader,
         protected SerializerInterface $serializer,
     ) {
+        $this->marshaler = new Marshaler();
+    }
+
+    /**
+     * @return array<string, array<mixed, mixed>>
+     * @throws ExceptionInterface
+     * @throws MetadataException
+     * @throws \ReflectionException
+     */
+    public function serialize(object $entity, bool $includePrimaryKey = true): array
+    {
+        $normalized = $this->normalize($entity, $includePrimaryKey);
+
+        return $this->marshaler->marshalItem($normalized);
+    }
+
+    /**
+     * @param object|class-string $entity
+     * @param array<string, mixed> $keyFieldValues
+     *
+     * @return array<string, string>
+     * @throws \ReflectionException
+     * @throws ExceptionInterface
+     * @throws MetadataException
+     */
+    public function serializePrimaryKey(object|string $entity, array $keyFieldValues = []): array
+    {
+        $normalized = $this->normalizePrimaryKey($entity, $keyFieldValues);
+
+        return $this->marshaler->marshalItem($normalized);
+    }
+
+    /**
+     * @param $item array<string, array<mixed, mixed>>
+     *
+     * @throws ExceptionInterface
+     * @throws \ReflectionException
+     * @throws MetadataException
+     */
+    public function deserialize(array $item, string $class): object
+    {
+        $normalized = $this->marshaler->unmarshalItem($item);
+
+        return $this->denormalize($normalized, $class);
     }
 
     /**
@@ -51,6 +98,18 @@ class EntitySerializer
     }
 
     /**
+     * @param $item array<string, array<mixed, mixed>>
+     *
+     * @throws ExceptionInterface
+     * @throws \ReflectionException
+     * @throws MetadataException
+     */
+    public function denormalize(array $item, string $class): object
+    {
+        return $this->denormalizeAttributes($item, $class);
+    }
+
+    /**
      * @param object|class-string $entity
      * @param array<string, mixed> $keyFieldValues
      *
@@ -59,7 +118,7 @@ class EntitySerializer
      * @throws ExceptionInterface
      * @throws MetadataException
      */
-    public function normalizePartitionKey(object|string $entity, array $keyFieldValues = []): array
+    protected function normalizePartitionKey(object|string $entity, array $keyFieldValues = []): array
     {
         $this->validatePrimaryKeyArguments($entity, $keyFieldValues);
         $isClassString = is_string($entity);
@@ -82,7 +141,7 @@ class EntitySerializer
      * @throws ExceptionInterface
      * @throws MetadataException
      */
-    public function normalizeSortKey(object|string $entity, array $keyFieldValues = []): array
+    protected function normalizeSortKey(object|string $entity, array $keyFieldValues = []): array
     {
         $this->validatePrimaryKeyArguments($entity, $keyFieldValues);
         $isClassString = is_string($entity);
@@ -99,22 +158,10 @@ class EntitySerializer
     }
 
     /**
-     * @param $item array<string, array<mixed, mixed>>
-     *
-     * @throws ExceptionInterface
-     * @throws \ReflectionException
-     * @throws MetadataException
-     */
-    public function denormalize(array $item, string $class): object
-    {
-        return $this->denormalizeAttributes($item, $class);
-    }
-
-    /**
      * @param object|class-string $entity
      * @param array<string, mixed> $keyFieldValues
      */
-    private function validatePrimaryKeyArguments(object|string $entity, array $keyFieldValues = []): void
+    protected function validatePrimaryKeyArguments(object|string $entity, array $keyFieldValues = []): void
     {
         $isClassString = is_string($entity);
 
@@ -133,7 +180,7 @@ class EntitySerializer
      * @throws \ReflectionException
      * @throws MetadataException
      */
-    private function normalizePartitionKeyName(string $class): ?string
+    protected function normalizePartitionKeyName(string $class): ?string
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
 
@@ -146,7 +193,7 @@ class EntitySerializer
      * @throws \ReflectionException
      * @throws MetadataException
      */
-    private function normalizeSortKeyName(string $class): ?string
+    protected function normalizeSortKeyName(string $class): ?string
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
 
@@ -158,7 +205,7 @@ class EntitySerializer
      * @throws ExceptionInterface
      * @throws MetadataException
      */
-    private function normalizePartitionKeyValueFromEntity(object $entity): ?string
+    protected function normalizePartitionKeyValueFromEntity(object $entity): ?string
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($entity::class);
         $key = $entityMetadata->getPartitionKey();
@@ -194,7 +241,7 @@ class EntitySerializer
      * @throws ExceptionInterface
      * @throws MetadataException
      */
-    private function normalizeSortKeyValueFromEntity(object $entity): ?string
+    protected function normalizeSortKeyValueFromEntity(object $entity): ?string
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($entity::class);
         $key = $entityMetadata->getSortKey();
@@ -238,7 +285,7 @@ class EntitySerializer
      * @throws ExceptionInterface
      * @throws MetadataException
      */
-    private function normalizePartitionKeyValueFromArray(string $class, array $valuesByField): ?string
+    protected function normalizePartitionKeyValueFromArray(string $class, array $valuesByField): ?string
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
         $key = $entityMetadata->getPartitionKey();
@@ -294,7 +341,7 @@ class EntitySerializer
      * @throws ExceptionInterface
      * @throws MetadataException
      */
-    private function normalizeSortKeyValueFromArray(string $class, array $valuesByField): ?string
+    protected function normalizeSortKeyValueFromArray(string $class, array $valuesByField): ?string
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
         $key = $entityMetadata->getSortKey();
@@ -338,7 +385,7 @@ class EntitySerializer
      * @throws ExceptionInterface
      * @throws MetadataException
      */
-    private function normalizeAttributes(object $entity): array
+    protected function normalizeAttributes(object $entity): array
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($entity::class);
         $classMetadata = $this->metadataLoader->getClassMetadata($entity::class);
@@ -360,7 +407,7 @@ class EntitySerializer
      * @throws ExceptionInterface
      * @throws MetadataException
      */
-    private function denormalizeAttributes(array $item, string $class): object
+    protected function denormalizeAttributes(array $item, string $class): object
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
         $propertyAttributes = $entityMetadata->getPropertyAttributes();

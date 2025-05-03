@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace EduardoMarques\DynamoPHP\ODM;
 
 use Aws\DynamoDb\DynamoDbClient;
-use Aws\DynamoDb\Marshaler;
 use EduardoMarques\DynamoPHP\Metadata\MetadataLoader;
 use EduardoMarques\DynamoPHP\Serializer\EntitySerializer;
 
@@ -13,7 +12,6 @@ class EntityManager
 {
     public function __construct(
         protected DynamoDbClient $dynamoDbClient,
-        protected Marshaler $dynamoDbMarshaler,
         protected MetadataLoader $metadataLoader,
         protected EntitySerializer $entitySerializer,
     ) {
@@ -28,19 +26,18 @@ class EntityManager
     public function find(string $class, array $keyFieldValues): ?object
     {
         try {
-            $key = $this->entitySerializer->normalizePrimaryKey($class, $keyFieldValues);
+            $key = $this->entitySerializer->serializePrimaryKey($class, $keyFieldValues);
 
             if (2 > count($key)) {
                 throw new EntityManagerException('Fields of both Partition and Sort keys must be provided');
             }
 
-            $rawKey = $this->dynamoDbMarshaler->marshalItem($key);
             $table = $this->metadataLoader->getEntityMetadata($class)->getTable();
 
             $result = $this->dynamoDbClient->getItem(
                 [
                     'TableName' => $table,
-                    'Key' => $rawKey,
+                    'Key' => $key,
                 ]
             );
 
@@ -50,12 +47,109 @@ class EntityManager
                 return null;
             }
 
-            $item = $this->dynamoDbMarshaler->unmarshalItem($rawItem);
-
-            return $this->entitySerializer->denormalize($item, $class);
+            return $this->entitySerializer->deserialize($rawItem, $class);
         } catch (\Throwable $exception) {
             $this->wrapException($exception);
         }
+    }
+
+    /**
+     * @param class-string $class
+     *
+     * @throws EntityManagerException
+     */
+    public function queryOne(string $class, QueryBuilder $queryBuilder): ?object
+    {
+        $queryBuilder->limit(1);
+        $result = $this->query($class, $queryBuilder);
+
+        return $result->getItems(true)[0] ?? null;
+    }
+
+    /**
+     * @param class-string $class
+     *
+     * @throws EntityManagerException
+     */
+    public function query(string $class, QueryBuilder $queryBuilder): ResultStream
+    {
+        $items = (function () use ($class, $queryBuilder): \Generator {
+            try {
+                $table = $this->metadataLoader->getEntityMetadata($class)->getTable();
+
+                $params = $queryBuilder->build();
+                $params['TableName'] = $table;
+                $remainingLimit = $params['Limit'] ?? null;
+
+                do {
+                    if (null !== $remainingLimit) {
+                        $params['Limit'] = $remainingLimit;
+                    }
+
+                    $result = $this->dynamoDbClient->query($params);
+
+                    foreach ($result->get('Items') ?? [] as $item) {
+                        yield $this->entitySerializer->deserialize($item, $class);
+
+                        if (null === $remainingLimit) {
+                            continue;
+                        }
+
+                        if (0 >= --$remainingLimit) {
+                            return;
+                        }
+                    }
+
+                    $params['ExclusiveStartKey'] = $result->get('LastEvaluatedKey') ?? null;
+                } while (!empty($params['ExclusiveStartKey']));
+            } catch (\Throwable $exception) {
+                $this->wrapException($exception);
+            }
+        })();
+
+        return new ResultStream($items);
+    }
+
+    /**
+     * @throws EntityManagerException
+     */
+    public function scan(string $class, ScanBuilder $scanBuilder): ResultStream
+    {
+        $items = (function () use ($class, $scanBuilder): \Generator {
+            try {
+                $table = $this->metadataLoader->getEntityMetadata($class)->getTable();
+
+                $params = $scanBuilder->build();
+                $params['TableName'] = $table;
+                $remainingLimit = $params['Limit'] ?? null;
+
+                do {
+                    if (null !== $remainingLimit) {
+                        $params['Limit'] = $remainingLimit;
+                    }
+
+                    $result = $this->dynamoDbClient->scan($params);
+
+                    foreach ($result->get('Items') ?? [] as $item) {
+                        yield $this->entitySerializer->deserialize($item, $class);
+
+                        if (null === $remainingLimit) {
+                            continue;
+                        }
+
+                        if (0 >= --$remainingLimit) {
+                            return;
+                        }
+                    }
+
+                    $params['ExclusiveStartKey'] = $result->get('LastEvaluatedKey') ?? null;
+                } while (!empty($params['ExclusiveStartKey']));
+            } catch (\Throwable $exception) {
+                $this->wrapException($exception);
+            }
+        })();
+
+        return new ResultStream($items);
     }
 
     /**
@@ -64,14 +158,13 @@ class EntityManager
     public function save(object $entity): void
     {
         try {
-            $item = $this->entitySerializer->normalize($entity);
-            $rawItem = $this->dynamoDbMarshaler->marshalItem($item);
             $table = $this->metadataLoader->getEntityMetadata($entity::class)->getTable();
+            $item = $this->entitySerializer->serialize($entity);
 
             $this->dynamoDbClient->putItem(
                 [
                     'TableName' => $table,
-                    'Item' => $rawItem,
+                    'Item' => $item,
                 ]
             );
         } catch (\Throwable $exception) {
@@ -85,14 +178,13 @@ class EntityManager
     public function remove(object $entity): void
     {
         try {
-            $key = $this->entitySerializer->normalizePrimaryKey($entity);
-            $rawKey = $this->dynamoDbMarshaler->marshalItem($key);
             $table = $this->metadataLoader->getEntityMetadata($entity::class)->getTable();
+            $key = $this->entitySerializer->serializePrimaryKey($entity);
 
             $this->dynamoDbClient->deleteItem(
                 [
                     'TableName' => $table,
-                    'Key' => $rawKey,
+                    'Key' => $key,
                 ]
             );
         } catch (\Throwable $exception) {
@@ -101,10 +193,31 @@ class EntityManager
     }
 
     /**
+     * @param class-string $class
+     *
+     * @throws EntityManagerException
+     */
+    public function describe(string $class): ResultStream
+    {
+        $result = (function () use ($class): \Generator {
+            try {
+                $table = $this->metadataLoader->getEntityMetadata($class)->getTable();
+                yield from $this->dynamoDbClient->describeTable(['TableName' => $table]);
+            } catch (\Throwable $exception) {
+                $this->wrapException($exception);
+            }
+        })();
+
+        return new ResultStream($result);
+    }
+
+    /**
      * @throws EntityManagerException
      */
     private function wrapException(\Throwable $exception): void
     {
-        throw new EntityManagerException($exception->getMessage());
+        throw new EntityManagerException(
+            sprintf('An error occurred. %s: %s', $exception::class, $exception->getMessage())
+        );
     }
 }
