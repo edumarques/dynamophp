@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace EduardoMarques\DynamoPHP\Serializer;
 
-class InvalidFieldException extends \InvalidArgumentException
+use InvalidArgumentException;
+
+class InvalidFieldException extends InvalidArgumentException
 {
 }

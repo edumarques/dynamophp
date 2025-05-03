@@ -99,7 +99,6 @@ abstract class AbstractBuilder
 
     /**
      * @param array<string, mixed> $values
-     *
      * @return array<string, array<string, mixed>>
      */
     protected function serialize(array $values): array

@@ -6,18 +6,19 @@ namespace EduardoMarques\DynamoPHP\Metadata;
 
 use EduardoMarques\DynamoPHP\Attribute\Attribute;
 use EduardoMarques\DynamoPHP\Attribute\Entity;
+use ReflectionAttribute;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionProperty;
 
 class MetadataLoader
 {
-    /**
-     * @var array<string, array<string, mixed>>
-     */
+    /** @var array<string, array<string, mixed>> */
     private array $cache = [];
 
     /**
      * @param class-string $class
-     *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function getClassMetadata(string $class): ClassMetadata
     {
@@ -25,7 +26,7 @@ class MetadataLoader
             return $this->cache[__METHOD__][$class];
         }
 
-        $reflection = new \ReflectionClass($class);
+        $reflection = new ReflectionClass($class);
 
         $classProperties = $this->getClassProperties($reflection);
 
@@ -38,8 +39,7 @@ class MetadataLoader
 
     /**
      * @param class-string $class
-     *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws MetadataException
      */
     public function getEntityMetadata(string $class): EntityMetadata
@@ -48,7 +48,7 @@ class MetadataLoader
             return $this->cache[__METHOD__][$class];
         }
 
-        $reflection = new \ReflectionClass($class);
+        $reflection = new ReflectionClass($class);
 
         $classAttributes = $this->getClassAttributes($reflection);
         $entityAttribute = $classAttributes[Entity::class] ?? null;
@@ -76,9 +76,10 @@ class MetadataLoader
     }
 
     /**
-     * @return array<string, \ReflectionProperty>
+     * @param ReflectionClass<object> $reflection
+     * @return array<string, ReflectionProperty>
      */
-    private function getClassProperties(\ReflectionClass $reflection): array
+    private function getClassProperties(ReflectionClass $reflection): array
     {
         $properties = [];
 
@@ -90,9 +91,10 @@ class MetadataLoader
     }
 
     /**
+     * @param ReflectionClass<object> $reflection
      * @return array<class-string, object>
      */
-    private function getClassAttributes(\ReflectionClass $reflection): array
+    private function getClassAttributes(ReflectionClass $reflection): array
     {
         $attributes = [];
 
@@ -105,9 +107,10 @@ class MetadataLoader
     }
 
     /**
+     * @param ReflectionClass<object> $reflection
      * @return array<string, array<int, object>>
      */
-    private function getPropertyAttributes(\ReflectionClass $reflection): array
+    private function getPropertyAttributes(ReflectionClass $reflection): array
     {
         $attributes = [];
 
@@ -116,7 +119,7 @@ class MetadataLoader
 
             if (!empty($propertyAttributes)) {
                 $attributes[$property->getName()] = array_map(
-                    fn(\ReflectionAttribute $attribute): object => $attribute->newInstance(),
+                    static fn(ReflectionAttribute $attribute): object => $attribute->newInstance(),
                     $propertyAttributes,
                 );
             }

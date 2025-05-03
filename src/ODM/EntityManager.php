@@ -7,6 +7,8 @@ namespace EduardoMarques\DynamoPHP\ODM;
 use Aws\DynamoDb\DynamoDbClient;
 use EduardoMarques\DynamoPHP\Metadata\MetadataLoader;
 use EduardoMarques\DynamoPHP\Serializer\EntitySerializer;
+use Generator;
+use Throwable;
 
 class EntityManager
 {
@@ -20,7 +22,6 @@ class EntityManager
     /**
      * @param class-string $class
      * @param array<string, mixed> $keyFieldValues
-     *
      * @throws EntityManagerException
      */
     public function find(string $class, array $keyFieldValues): ?object
@@ -48,32 +49,32 @@ class EntityManager
             }
 
             return $this->entitySerializer->deserialize($rawItem, $class);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->wrapException($exception);
         }
     }
 
     /**
      * @param class-string $class
-     *
      * @throws EntityManagerException
      */
     public function queryOne(string $class, QueryBuilder $queryBuilder): ?object
     {
         $queryBuilder->limit(1);
-        $result = $this->query($class, $queryBuilder);
 
-        return $result->getItems(true)[0] ?? null;
+        /** @var array<int, object> $result */
+        $result = $this->query($class, $queryBuilder)->getItems(true);
+
+        return $result[0] ?? null;
     }
 
     /**
      * @param class-string $class
-     *
      * @throws EntityManagerException
      */
     public function query(string $class, QueryBuilder $queryBuilder): ResultStream
     {
-        $items = (function () use ($class, $queryBuilder): \Generator {
+        $items = (function () use ($class, $queryBuilder): Generator {
             try {
                 $table = $this->metadataLoader->getEntityMetadata($class)->getTable();
 
@@ -102,7 +103,7 @@ class EntityManager
 
                     $params['ExclusiveStartKey'] = $result->get('LastEvaluatedKey') ?? null;
                 } while (!empty($params['ExclusiveStartKey']));
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 $this->wrapException($exception);
             }
         })();
@@ -111,11 +112,12 @@ class EntityManager
     }
 
     /**
+     * @param class-string $class
      * @throws EntityManagerException
      */
     public function scan(string $class, ScanBuilder $scanBuilder): ResultStream
     {
-        $items = (function () use ($class, $scanBuilder): \Generator {
+        $items = (function () use ($class, $scanBuilder): Generator {
             try {
                 $table = $this->metadataLoader->getEntityMetadata($class)->getTable();
 
@@ -144,7 +146,7 @@ class EntityManager
 
                     $params['ExclusiveStartKey'] = $result->get('LastEvaluatedKey') ?? null;
                 } while (!empty($params['ExclusiveStartKey']));
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 $this->wrapException($exception);
             }
         })();
@@ -167,7 +169,7 @@ class EntityManager
                     'Item' => $item,
                 ]
             );
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->wrapException($exception);
         }
     }
@@ -187,23 +189,22 @@ class EntityManager
                     'Key' => $key,
                 ]
             );
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->wrapException($exception);
         }
     }
 
     /**
      * @param class-string $class
-     *
      * @throws EntityManagerException
      */
     public function describe(string $class): ResultStream
     {
-        $result = (function () use ($class): \Generator {
+        $result = (function () use ($class): Generator {
             try {
                 $table = $this->metadataLoader->getEntityMetadata($class)->getTable();
                 yield from $this->dynamoDbClient->describeTable(['TableName' => $table]);
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 $this->wrapException($exception);
             }
         })();
@@ -214,7 +215,7 @@ class EntityManager
     /**
      * @throws EntityManagerException
      */
-    private function wrapException(\Throwable $exception): void
+    private function wrapException(Throwable $exception): never
     {
         throw new EntityManagerException(
             sprintf('An error occurred. %s: %s', $exception::class, $exception->getMessage())

@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace EduardoMarques\DynamoPHP\Attribute;
 
-#[\Attribute(\Attribute::TARGET_CLASS)]
+use Attribute as PHPAttribute;
+
+#[PHPAttribute(PHPAttribute::TARGET_CLASS)]
 class Entity
 {
     public function __construct(
-        /** @var non-empty-string */
         public string $table,
         public KeyInterface $partitionKey,
         public ?KeyInterface $sortKey = null,

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace EduardoMarques\DynamoPHP\Attribute;
 
-class InvalidArgumentException extends \InvalidArgumentException
+use InvalidArgumentException as PHPInvalidArgumentException;
+
+class InvalidArgumentException extends PHPInvalidArgumentException
 {
 }

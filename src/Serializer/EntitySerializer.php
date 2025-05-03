@@ -7,8 +7,10 @@ namespace EduardoMarques\DynamoPHP\Serializer;
 use Aws\DynamoDb\Marshaler;
 use EduardoMarques\DynamoPHP\Metadata\MetadataException;
 use EduardoMarques\DynamoPHP\Metadata\MetadataLoader;
+use ReflectionException;
+use ReflectionProperty;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
-use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Serializer\Serializer;
 
 class EntitySerializer
 {
@@ -16,7 +18,7 @@ class EntitySerializer
 
     public function __construct(
         protected MetadataLoader $metadataLoader,
-        protected SerializerInterface $serializer,
+        protected Serializer $serializer,
     ) {
         $this->marshaler = new Marshaler();
     }
@@ -25,7 +27,7 @@ class EntitySerializer
      * @return array<string, array<mixed, mixed>>
      * @throws ExceptionInterface
      * @throws MetadataException
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function serialize(object $entity, bool $includePrimaryKey = true): array
     {
@@ -37,9 +39,8 @@ class EntitySerializer
     /**
      * @param object|class-string $entity
      * @param array<string, mixed> $keyFieldValues
-     *
      * @return array<string, string>
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
      */
@@ -51,14 +52,15 @@ class EntitySerializer
     }
 
     /**
-     * @param $item array<string, array<mixed, mixed>>
-     *
+     * @param array<string, array<mixed, mixed>> $item
+     * @param class-string $class
      * @throws ExceptionInterface
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws MetadataException
      */
     public function deserialize(array $item, string $class): object
     {
+        /** @var array<string, mixed> $normalized */
         $normalized = $this->marshaler->unmarshalItem($item);
 
         return $this->denormalize($normalized, $class);
@@ -67,7 +69,7 @@ class EntitySerializer
     /**
      * @return array<string, array<mixed, mixed>>
      * @throws ExceptionInterface
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws MetadataException
      */
     public function normalize(object $entity, bool $includePrimaryKey = true): array
@@ -83,9 +85,8 @@ class EntitySerializer
     /**
      * @param object|class-string $entity
      * @param array<string, mixed> $keyFieldValues
-     *
      * @return array<string, string>
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
      */
@@ -98,10 +99,10 @@ class EntitySerializer
     }
 
     /**
-     * @param $item array<string, array<mixed, mixed>>
-     *
+     * @param array<string, array<mixed, mixed>> $item
+     * @param class-string $class
      * @throws ExceptionInterface
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws MetadataException
      */
     public function denormalize(array $item, string $class): object
@@ -112,9 +113,8 @@ class EntitySerializer
     /**
      * @param object|class-string $entity
      * @param array<string, mixed> $keyFieldValues
-     *
      * @return array<string, string>
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
      */
@@ -135,9 +135,8 @@ class EntitySerializer
     /**
      * @param object|class-string $entity
      * @param array<string, mixed> $keyFieldValues
-     *
      * @return array<string, string>
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
      */
@@ -176,11 +175,10 @@ class EntitySerializer
 
     /**
      * @param class-string $class
-     *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws MetadataException
      */
-    protected function normalizePartitionKeyName(string $class): ?string
+    protected function normalizePartitionKeyName(string $class): string
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
 
@@ -189,8 +187,7 @@ class EntitySerializer
 
     /**
      * @param class-string $class
-     *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws MetadataException
      */
     protected function normalizeSortKeyName(string $class): ?string
@@ -201,11 +198,11 @@ class EntitySerializer
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
      */
-    protected function normalizePartitionKeyValueFromEntity(object $entity): ?string
+    protected function normalizePartitionKeyValueFromEntity(object $entity): string
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($entity::class);
         $key = $entityMetadata->getPartitionKey();
@@ -214,7 +211,7 @@ class EntitySerializer
         $prefix = $key->getPrefix();
 
         $classMetadata = $this->metadataLoader->getClassMetadata($entity::class);
-        $finalValue = $prefix;
+        $finalValue = $prefix ?? '';
 
         foreach ($definedFields as $field) {
             if (false === $classMetadata->offsetExists($field)) {
@@ -226,8 +223,20 @@ class EntitySerializer
                 );
             }
 
+            /** @var ReflectionProperty $reflectionProperty */
             $reflectionProperty = $classMetadata->offsetGet($field);
             $propertyValue = $reflectionProperty->getValue($entity);
+
+            if (false === is_scalar($propertyValue)) {
+                throw new InvalidFieldException(
+                    sprintf(
+                        'Values of Partition Key fields need to be scalar. Please check it for the field "%s".',
+                        $field
+                    )
+                );
+            }
+
+            /** @var scalar $currentFieldValue */
             $currentFieldValue = $this->serializer->normalize($propertyValue);
 
             $finalValue .= empty($finalValue) ? $currentFieldValue : $delimiter . $currentFieldValue;
@@ -237,7 +246,7 @@ class EntitySerializer
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
      */
@@ -267,8 +276,20 @@ class EntitySerializer
                 );
             }
 
+            /** @var ReflectionProperty $reflectionProperty */
             $reflectionProperty = $classMetadata->offsetGet($field);
             $propertyValue = $reflectionProperty->getValue($entity);
+
+            if (false === is_scalar($propertyValue)) {
+                throw new InvalidFieldException(
+                    sprintf(
+                        'Values of Sort Key fields need to be scalar. Please check it for the field "%s".',
+                        $field
+                    )
+                );
+            }
+
+            /** @var scalar $currentFieldValue */
             $currentFieldValue = $this->serializer->normalize($propertyValue);
 
             $finalValue .= empty($finalValue) ? $currentFieldValue : $delimiter . $currentFieldValue;
@@ -280,12 +301,11 @@ class EntitySerializer
     /**
      * @param class-string $class
      * @param array<string, mixed> $valuesByField
-     *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
      */
-    protected function normalizePartitionKeyValueFromArray(string $class, array $valuesByField): ?string
+    protected function normalizePartitionKeyValueFromArray(string $class, array $valuesByField): string
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
         $key = $entityMetadata->getPartitionKey();
@@ -310,7 +330,7 @@ class EntitySerializer
         }
 
         $classMetadata = $this->metadataLoader->getClassMetadata($class);
-        $finalValue = $prefix;
+        $finalValue = $prefix ?? '';
 
         foreach ($valuesByFieldSorted as $field => $value) {
             if (false === $classMetadata->offsetExists($field)) {
@@ -325,6 +345,16 @@ class EntitySerializer
                 );
             }
 
+            if (false === is_scalar($value)) {
+                throw new InvalidFieldException(
+                    sprintf(
+                        'Values of Partition Key fields need to be scalar. Please check it for the field "%s".',
+                        $field
+                    )
+                );
+            }
+
+            /** @var scalar $currentFieldValue */
             $currentFieldValue = $this->serializer->normalize($value);
 
             $finalValue .= empty($finalValue) ? $currentFieldValue : $delimiter . $currentFieldValue;
@@ -336,8 +366,7 @@ class EntitySerializer
     /**
      * @param class-string $class
      * @param array<string, mixed> $valuesByField
-     *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
      */
@@ -363,7 +392,7 @@ class EntitySerializer
         }
 
         $classMetadata = $this->metadataLoader->getClassMetadata($class);
-        $finalValue = $prefix;
+        $finalValue = $prefix ?? '';
 
         foreach ($valuesByFieldSorted as $field => $value) {
             if (false === $classMetadata->offsetExists($field)) {
@@ -372,6 +401,16 @@ class EntitySerializer
                 );
             }
 
+            if (false === is_scalar($value)) {
+                throw new InvalidFieldException(
+                    sprintf(
+                        'Values of Sort Key fields need to be scalar. Please check it for the field "%s".',
+                        $field
+                    )
+                );
+            }
+
+            /** @var scalar $currentFieldValue */
             $currentFieldValue = $this->serializer->normalize($value);
 
             $finalValue .= empty($finalValue) ? $currentFieldValue : $delimiter . $currentFieldValue;
@@ -381,7 +420,8 @@ class EntitySerializer
     }
 
     /**
-     * @throws \ReflectionException
+     * @return array<string, mixed>
+     * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
      */
@@ -403,7 +443,9 @@ class EntitySerializer
     }
 
     /**
-     * @throws \ReflectionException
+     * @param array<string, mixed> $item
+     * @param class-string $class
+     * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
      */
