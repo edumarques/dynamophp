@@ -21,7 +21,7 @@ final readonly class EntityDenormalizer
     /**
      * @template T of object
      * @param array<string, mixed> $data
-     * @param class-string $class
+     * @param class-string<T> $class
      * @return T
      * @throws ExceptionInterface
      * @throws ReflectionException

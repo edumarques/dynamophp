@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace EduardoMarques\DynamoPHP\ODM;
 
 use Aws\DynamoDb\DynamoDbClient;
+use Aws\DynamoDb\Marshaler;
 use EduardoMarques\DynamoPHP\Metadata\MetadataLoader;
 use EduardoMarques\DynamoPHP\Serializer\EntityDenormalizer;
 use EduardoMarques\DynamoPHP\Serializer\EntityNormalizer;
@@ -36,10 +37,12 @@ readonly class EntityManagerFactory
             ),
         ]);
 
+        $marshaler = new Marshaler();
         $normalizer = new EntityNormalizer($metadataLoader, $serializer);
         $denormalizer = new EntityDenormalizer($metadataLoader, $serializer);
-        $entitySerializer = new EntitySerializer($normalizer, $denormalizer);
+        $entitySerializer = new EntitySerializer($normalizer, $denormalizer, $marshaler);
+        $opArgsBuilder = new OpArgsBuilder($serializer, $marshaler);
 
-        return new EntityManager($dynamoDbClient, $metadataLoader, $entitySerializer);
+        return new EntityManager($dynamoDbClient, $metadataLoader, $entitySerializer, $opArgsBuilder);
     }
 }

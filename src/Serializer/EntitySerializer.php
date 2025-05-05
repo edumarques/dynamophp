@@ -11,13 +11,11 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
 readonly class EntitySerializer
 {
-    protected Marshaler $marshaler;
-
     public function __construct(
         protected EntityNormalizer $entityNormalizer,
         protected EntityDenormalizer $entityDenormalizer,
+        protected Marshaler $marshaler,
     ) {
-        $this->marshaler = new Marshaler();
     }
 
     /**
@@ -55,6 +53,7 @@ readonly class EntitySerializer
      * @template T of object
      * @param array<string, array<mixed, mixed>> $data
      * @param class-string<T> $class
+     * @return T
      * @throws ExceptionInterface
      * @throws ReflectionException
      * @throws MetadataException

@@ -14,7 +14,7 @@ final class PartitionKeyTest extends TestCase
     #[Test]
     public function itReturnsFieldsSanitized(): void
     {
-        $partitionKey = new PartitionKey(['id' => 'id', 'id', 'name']);
+        $partitionKey = new PartitionKey(['id', 'id', 'name']);
 
         $this->assertSame(['id', 'name'], $partitionKey->getFields());
     }

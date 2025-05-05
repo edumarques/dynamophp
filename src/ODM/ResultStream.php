@@ -12,18 +12,18 @@ use Generator;
 readonly class ResultStream
 {
     /**
-     * @param Generator<T> $items
+     * @param Generator<T> $result
      */
     public function __construct(
-        protected Generator $items,
+        protected Generator $result,
     ) {
     }
 
     /**
      * @return Generator<T>|array<T>
      */
-    public function getItems(bool $asArray = false): iterable
+    public function getResult(bool $asArray = false): iterable
     {
-        return $asArray ? iterator_to_array($this->items) : $this->items;
+        return $asArray ? iterator_to_array($this->result) : $this->result;
     }
 }

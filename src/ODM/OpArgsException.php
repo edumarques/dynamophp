@@ -6,6 +6,6 @@ namespace EduardoMarques\DynamoPHP\ODM;
 
 use Exception;
 
-class BuilderException extends Exception
+class OpArgsException extends Exception
 {
 }

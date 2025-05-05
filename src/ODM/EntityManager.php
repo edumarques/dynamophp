@@ -16,6 +16,7 @@ readonly class EntityManager
         protected DynamoDbClient $dynamoDbClient,
         protected MetadataLoader $metadataLoader,
         protected EntitySerializer $entitySerializer,
+        protected OpArgsBuilder $opArgsBuilder,
     ) {
     }
 
@@ -55,12 +56,12 @@ readonly class EntityManager
      * @return T|null
      * @throws EntityManagerException
      */
-    public function queryOne(string $class, QueryBuilder $queryBuilder): ?object
+    public function queryOne(string $class, QueryArgs $queryBuilder): ?object
     {
         $queryBuilder->limit(1);
 
-        /** @var array<int, object> $result */
-        $result = $this->query($class, $queryBuilder)->getItems(true);
+        /** @var array<int, T> $result */
+        $result = $this->query($class, $queryBuilder)->getResult(true);
 
         return $result[0] ?? null;
     }
@@ -71,14 +72,14 @@ readonly class EntityManager
      * @return ResultStream<T>
      * @throws EntityManagerException
      */
-    public function query(string $class, QueryBuilder $queryBuilder): ResultStream
+    public function query(string $class, QueryArgs $queryArgs): ResultStream
     {
-        $items = (function () use ($class, $queryBuilder): Generator {
+        $result = (function () use ($class, $queryArgs): Generator {
             try {
                 $table = $this->metadataLoader->getEntityMetadata($class)->getTable();
+                $queryArgs->tableName($table);
 
-                $params = $queryBuilder->build();
-                $params['TableName'] = $table;
+                $params = $this->opArgsBuilder->serialize($queryArgs);
                 $remainingLimit = $params['Limit'] ?? null;
 
                 do {
@@ -107,7 +108,7 @@ readonly class EntityManager
             }
         })();
 
-        return new ResultStream($items);
+        return new ResultStream($result);
     }
 
     /**
@@ -116,14 +117,14 @@ readonly class EntityManager
      * @return ResultStream<T>
      * @throws EntityManagerException
      */
-    public function scan(string $class, ScanBuilder $scanBuilder): ResultStream
+    public function scan(string $class, ScanArgs $scanArgs): ResultStream
     {
-        $items = (function () use ($class, $scanBuilder): Generator {
+        $result = (function () use ($class, $scanArgs): Generator {
             try {
                 $table = $this->metadataLoader->getEntityMetadata($class)->getTable();
+                $scanArgs->tableName($table);
 
-                $params = $scanBuilder->build();
-                $params['TableName'] = $table;
+                $params = $this->opArgsBuilder->serialize($scanArgs);
                 $remainingLimit = $params['Limit'] ?? null;
 
                 do {
@@ -152,7 +153,7 @@ readonly class EntityManager
             }
         })();
 
-        return new ResultStream($items);
+        return new ResultStream($result);
     }
 
     /**

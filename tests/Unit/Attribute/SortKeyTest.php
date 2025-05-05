@@ -14,7 +14,7 @@ final class SortKeyTest extends TestCase
     #[Test]
     public function itReturnsFieldsSanitized(): void
     {
-        $partitionKey = new SortKey(['id' => 'id', 'id', 'name']);
+        $partitionKey = new SortKey(['id', 'id', 'name']);
 
         $this->assertSame(['id', 'name'], $partitionKey->getFields());
     }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace EduardoMarques\DynamoPHP\Tests\Unit\Stubs;
+namespace EduardoMarques\DynamoPHP\Tests\Integration\Stubs;
 
 use DateTimeInterface;
 use EduardoMarques\DynamoPHP\Attribute\Attribute;
@@ -12,34 +12,32 @@ use EduardoMarques\DynamoPHP\Attribute\SortKey;
 use Symfony\Component\Serializer\Attribute\SerializedName;
 
 #[Entity(
-    table: 'tests',
+    table: 'test-table',
     partitionKey: new PartitionKey(['id']),
     sortKey: new SortKey(['creationDate'])
 )]
 final class EntityA
 {
     #[Attribute]
-    public int $id;
-
-    public string $firstName;
-
-    public string $lastName;
-
-    #[Attribute]
     #[SerializedName('fullName')]
     public string $name;
+
+    #[Attribute(name: 'type')]
+    public EnumA $enumA = EnumA::TYPE_A;
+
+    public EntityB $b;
 
     #[Attribute(name: 'createdAt')]
     public DateTimeInterface $creationDate;
 
     public function __construct(
         #[Attribute]
-        protected string $cardNumber,
+        protected string $id,
     ) {
     }
 
-    public function getCardNumber(): string
+    public function getId(): string
     {
-        return $this->cardNumber;
+        return $this->id;
     }
 }

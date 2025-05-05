@@ -36,7 +36,7 @@ final class MetadataLoaderTest extends TestCase
 
         $this->assertSame('tests', $metadata->getTable());
         $this->assertSame(['id'], $metadata->getPartitionKey()->getFields());
-        $this->assertSame(['creationDate'], $metadata->getSortKey()->getFields());
+        $this->assertSame(['creationDate'], $metadata->getSortKey()?->getFields());
 
         $propertyAttributes = $metadata->getPropertyAttributes();
         $properties = array_keys($propertyAttributes);
