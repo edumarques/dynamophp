@@ -8,15 +8,9 @@ vendor
 
 ###> phpunit/phpunit ###
 coverage
-phpunit.xml
 .phpunit.result.cache
 ###< phpunit/phpunit ###
 
 ###> squizlabs/php_codesniffer ###
-phpcs.xml
-.phpcs-cache
+.phpcs.cache
 ###< squizlabs/php_codesniffer ###
-
-###> phpstan/phpstan ###
-phpstan.neon
-###< phpstan/phpstan ###

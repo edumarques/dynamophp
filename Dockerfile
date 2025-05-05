@@ -14,4 +14,6 @@ RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS linux-headers \
 
 COPY --from=composer /usr/bin/composer /usr/bin/composer
 
+RUN git config --global --add safe.directory /app
+
 CMD ["tail", "-f", "/dev/null"]

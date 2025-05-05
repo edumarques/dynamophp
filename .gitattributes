@@ -1,4 +1,6 @@
+/.docker export-ignore
 /.github export-ignore
+/.hooks export-ignore
 /coverage export-ignore
 /tests export-ignore
 .gitattributes export-ignore

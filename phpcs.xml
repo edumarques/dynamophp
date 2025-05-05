@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/squizlabs/php_codesniffer/phpcs.xsd">
+
+  <arg name="basepath" value="."/>
+  <arg name="cache" value=".phpcs.cache"/>
+  <arg name="colors"/>
+  <arg name="extensions" value="php"/>
+
+  <file>src/</file>
+  <file>tests/</file>
+
+  <rule ref="PSR12"/>
+
+  <rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes">
+    <properties>
+      <property name="spacesCountAroundEqualsSign" value="0"/>
+    </properties>
+  </rule>
+
+  <rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHint"/>
+  <rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint"/>
+  <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint"/>
+
+  <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses"/>
+  <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly"/>
+  <rule ref="SlevomatCodingStandard.Namespaces.UseDoesNotStartWithBackslash"/>
+
+  <rule ref="SlevomatCodingStandard.Arrays.TrailingArrayComma"/>
+
+  <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInDeclaration"/>
+  <rule ref="SlevomatCodingStandard.Functions.StaticClosure"/>
+
+  <rule ref="SlevomatCodingStandard.Variables.DisallowSuperGlobalVariable"/>
+
+  <rule ref="SlevomatCodingStandard.Commenting.DocCommentSpacing"/>
+  <rule ref="SlevomatCodingStandard.Commenting.RequireOneLinePropertyDocComment"/>
+
+</ruleset>
