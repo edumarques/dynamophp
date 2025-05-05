@@ -12,6 +12,12 @@ jobs:
       - name: checkout repo
         uses: actions/checkout@v4
 
+      - name: cache vendor folder
+        uses: actions/cache@v4
+        with:
+          path: ./vendor
+          key: ${{ github.sha }}
+
       - name: build app
         run: make start
 
