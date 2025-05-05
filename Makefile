@@ -74,7 +74,7 @@ test-cov-integration: ## Run integration tests and generate coverage report
 	@$(DOCKER_COMPOSE) exec -e XDEBUG_MODE=coverage app vendor/bin/phpunit --testsuite=integration --testdox --coverage-clover coverage/clover/clover.xml --coverage-html coverage/html
 
 test-cov: ## Run all tests and generate coverage report
-	@$(DOCKER_COMPOSE) exec -e XDEBUG_MODE=coverage app vendor/bin/phpunit --testdox --coverage-clover coverage/clover/clover.xml --coverage-html coverage/html
+	@$(DOCKER_COMPOSE) exec -e XDEBUG_MODE=coverage app vendor/bin/phpunit --testdox --coverage-clover coverage/clover/clover.xml --coverage-html coverage/html --log-junit coverage/junit.xml
 
 cov-unit: test-cov-unit cov-report ## Generate and open unit test coverage report
 
