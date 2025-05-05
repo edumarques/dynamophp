@@ -20,11 +20,11 @@ jobs:
           path: ./vendor
           key: ${{ github.sha }}
 
-      - name: validate dependencies
-        run: make composer c=validate
-
       - name: build app
         run: make start
+
+      - name: validate dependencies
+        run: make composer c=validate
 
       - name: install dependencies
         run: make composer c=install
