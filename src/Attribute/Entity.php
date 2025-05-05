@@ -11,8 +11,8 @@ class Entity
 {
     public function __construct(
         public string $table,
-        public KeyInterface $partitionKey,
-        public ?KeyInterface $sortKey = null,
+        public AbstractKey $partitionKey,
+        public ?AbstractKey $sortKey = null,
     ) {
         if ('' === $this->table) {
             throw new InvalidArgumentException(

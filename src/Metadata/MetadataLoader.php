@@ -11,13 +11,14 @@ use ReflectionClass;
 use ReflectionException;
 use ReflectionProperty;
 
-class MetadataLoader
+final class MetadataLoader
 {
     /** @var array<string, array<string, mixed>> */
     private array $cache = [];
 
     /**
-     * @param class-string $class
+     * @template T of object
+     * @param class-string<T> $class
      * @throws ReflectionException
      */
     public function getClassMetadata(string $class): ClassMetadata
@@ -38,7 +39,8 @@ class MetadataLoader
     }
 
     /**
-     * @param class-string $class
+     * @template T of object
+     * @param class-string<T> $class
      * @throws ReflectionException
      * @throws MetadataException
      */
@@ -76,7 +78,8 @@ class MetadataLoader
     }
 
     /**
-     * @param ReflectionClass<object> $reflection
+     * @template T of object
+     * @param ReflectionClass<T> $reflection
      * @return array<string, ReflectionProperty>
      */
     private function getClassProperties(ReflectionClass $reflection): array
@@ -91,7 +94,8 @@ class MetadataLoader
     }
 
     /**
-     * @param ReflectionClass<object> $reflection
+     * @template T of object
+     * @param ReflectionClass<T> $reflection
      * @return array<class-string, object>
      */
     private function getClassAttributes(ReflectionClass $reflection): array
@@ -107,7 +111,8 @@ class MetadataLoader
     }
 
     /**
-     * @param ReflectionClass<object> $reflection
+     * @template T of object
+     * @param ReflectionClass<T> $reflection
      * @return array<string, array<int, object>>
      */
     private function getPropertyAttributes(ReflectionClass $reflection): array

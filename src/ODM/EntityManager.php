@@ -10,7 +10,7 @@ use EduardoMarques\DynamoPHP\Serializer\EntitySerializer;
 use Generator;
 use Throwable;
 
-class EntityManager
+readonly class EntityManager
 {
     public function __construct(
         protected DynamoDbClient $dynamoDbClient,
@@ -20,27 +20,22 @@ class EntityManager
     }
 
     /**
-     * @param class-string $class
+     * @template T of object
+     * @param class-string<T> $class
      * @param array<string, mixed> $keyFieldValues
+     * @return T|null
      * @throws EntityManagerException
      */
-    public function find(string $class, array $keyFieldValues): ?object
+    public function get(string $class, array $keyFieldValues): ?object
     {
         try {
             $key = $this->entitySerializer->serializePrimaryKey($class, $keyFieldValues);
-
-            if (2 > count($key)) {
-                throw new EntityManagerException('Fields of both Partition and Sort keys must be provided');
-            }
-
             $table = $this->metadataLoader->getEntityMetadata($class)->getTable();
 
-            $result = $this->dynamoDbClient->getItem(
-                [
-                    'TableName' => $table,
-                    'Key' => $key,
-                ]
-            );
+            $result = $this->dynamoDbClient->getItem([
+                'TableName' => $table,
+                'Key' => $key,
+            ]);
 
             $rawItem = $result['Item'] ?? null;
 
@@ -55,7 +50,9 @@ class EntityManager
     }
 
     /**
-     * @param class-string $class
+     * @template T of object
+     * @param class-string<T> $class
+     * @return T|null
      * @throws EntityManagerException
      */
     public function queryOne(string $class, QueryBuilder $queryBuilder): ?object
@@ -69,7 +66,9 @@ class EntityManager
     }
 
     /**
-     * @param class-string $class
+     * @template T of object
+     * @param class-string<T> $class
+     * @return ResultStream<T>
      * @throws EntityManagerException
      */
     public function query(string $class, QueryBuilder $queryBuilder): ResultStream
@@ -112,7 +111,9 @@ class EntityManager
     }
 
     /**
-     * @param class-string $class
+     * @template T of object
+     * @param class-string<T> $class
+     * @return ResultStream<T>
      * @throws EntityManagerException
      */
     public function scan(string $class, ScanBuilder $scanBuilder): ResultStream
@@ -155,40 +156,40 @@ class EntityManager
     }
 
     /**
+     * @template T of object
+     * @param T $entity
      * @throws EntityManagerException
      */
-    public function save(object $entity): void
+    public function put(object $entity): void
     {
         try {
             $table = $this->metadataLoader->getEntityMetadata($entity::class)->getTable();
             $item = $this->entitySerializer->serialize($entity);
 
-            $this->dynamoDbClient->putItem(
-                [
-                    'TableName' => $table,
-                    'Item' => $item,
-                ]
-            );
+            $this->dynamoDbClient->putItem([
+                'TableName' => $table,
+                'Item' => $item,
+            ]);
         } catch (Throwable $exception) {
             $this->wrapException($exception);
         }
     }
 
     /**
+     * @template T of object
+     * @param T $entity
      * @throws EntityManagerException
      */
-    public function remove(object $entity): void
+    public function delete(object $entity): void
     {
         try {
             $table = $this->metadataLoader->getEntityMetadata($entity::class)->getTable();
             $key = $this->entitySerializer->serializePrimaryKey($entity);
 
-            $this->dynamoDbClient->deleteItem(
-                [
-                    'TableName' => $table,
-                    'Key' => $key,
-                ]
-            );
+            $this->dynamoDbClient->deleteItem([
+                'TableName' => $table,
+                'Key' => $key,
+            ]);
         } catch (Throwable $exception) {
             $this->wrapException($exception);
         }
@@ -196,6 +197,7 @@ class EntityManager
 
     /**
      * @param class-string $class
+     * @return ResultStream<mixed>
      * @throws EntityManagerException
      */
     public function describe(string $class): ResultStream

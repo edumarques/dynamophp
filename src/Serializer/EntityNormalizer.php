@@ -11,7 +11,7 @@ use ReflectionProperty;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-class EntityNormalizer
+final readonly class EntityNormalizer
 {
     public const string DATETIME_FORMAT_KEY = EntityNormalizer::class . '_datetime_format';
 
@@ -22,7 +22,9 @@ class EntityNormalizer
     }
 
     /**
-     * @return array<string, array<mixed, mixed>>
+     * @template T of object
+     * @param T $entity
+     * @return array<string, mixed>
      * @throws ExceptionInterface
      * @throws ReflectionException
      * @throws MetadataException
@@ -38,7 +40,8 @@ class EntityNormalizer
     }
 
     /**
-     * @param object|class-string $entity
+     * @template T of object
+     * @param T|class-string<T> $entity
      * @param array<string, mixed> $keyFieldValues
      * @return array<string, string>
      * @throws ReflectionException
@@ -54,7 +57,8 @@ class EntityNormalizer
     }
 
     /**
-     * @param object|class-string $entity
+     * @template T of object
+     * @param T|class-string<T> $entity
      * @param array<string, mixed> $keyFieldValues
      * @return array<string, string>
      * @throws ReflectionException
@@ -63,7 +67,7 @@ class EntityNormalizer
      */
     protected function normalizePartitionKey(object|string $entity, array $keyFieldValues = []): array
     {
-        $this->validatePrimaryKeyArguments($entity, $keyFieldValues);
+        $this->validateKeyArguments($entity, $keyFieldValues);
         $isClassString = is_string($entity);
         $class = $isClassString ? $entity : $entity::class;
 
@@ -76,7 +80,8 @@ class EntityNormalizer
     }
 
     /**
-     * @param object|class-string $entity
+     * @template T of object
+     * @param T|class-string<T> $entity
      * @param array<string, mixed> $keyFieldValues
      * @return array<string, string>
      * @throws ReflectionException
@@ -85,7 +90,7 @@ class EntityNormalizer
      */
     protected function normalizeSortKey(object|string $entity, array $keyFieldValues = []): array
     {
-        $this->validatePrimaryKeyArguments($entity, $keyFieldValues);
+        $this->validateKeyArguments($entity, $keyFieldValues);
         $isClassString = is_string($entity);
         $class = $isClassString ? $entity : $entity::class;
         $sortKeyName = $this->normalizeSortKeyName($class);
@@ -94,16 +99,17 @@ class EntityNormalizer
             ? $this->normalizeSortKeyValueFromArray($class, $keyFieldValues)
             : $this->normalizeSortKeyValueFromEntity($entity);
 
-        return null === $sortKeyName || null === $sortKeyValue
+        return empty($sortKeyName) || empty($sortKeyValue)
             ? []
             : [$sortKeyName => $sortKeyValue];
     }
 
     /**
-     * @param object|class-string $entity
+     * @template T of object
+     * @param T|class-string<T> $entity
      * @param array<string, mixed> $keyFieldValues
      */
-    protected function validatePrimaryKeyArguments(object|string $entity, array $keyFieldValues = []): void
+    protected function validateKeyArguments(object|string $entity, array $keyFieldValues = []): void
     {
         $isClassString = is_string($entity);
 
@@ -117,7 +123,8 @@ class EntityNormalizer
     }
 
     /**
-     * @param class-string $class
+     * @template T of object
+     * @param class-string<T> $class
      * @throws ReflectionException
      * @throws MetadataException
      */
@@ -129,7 +136,8 @@ class EntityNormalizer
     }
 
     /**
-     * @param class-string $class
+     * @template T of object
+     * @param class-string<T> $class
      * @throws ReflectionException
      * @throws MetadataException
      */
@@ -141,6 +149,8 @@ class EntityNormalizer
     }
 
     /**
+     * @template T of object
+     * @param T $entity
      * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
@@ -157,7 +167,7 @@ class EntityNormalizer
         $finalValue = $prefix ?? '';
 
         foreach ($definedFields as $field) {
-            if (false === $classMetadata->offsetExists($field)) {
+            if (false === $classMetadata->has($field)) {
                 throw new InvalidFieldException(
                     sprintf(
                         'Field "%s" defined in Partition Key is invalid. Are you sure it exists in the entity class?',
@@ -167,7 +177,7 @@ class EntityNormalizer
             }
 
             /** @var ReflectionProperty $reflectionProperty */
-            $reflectionProperty = $classMetadata->offsetGet($field);
+            $reflectionProperty = $classMetadata->get($field);
             $propertyValue = $reflectionProperty->getValue($entity);
 
             /** @var scalar $currentFieldValue */
@@ -180,6 +190,8 @@ class EntityNormalizer
     }
 
     /**
+     * @template T of object
+     * @param T $entity
      * @throws ReflectionException
      * @throws ExceptionInterface
      * @throws MetadataException
@@ -198,10 +210,10 @@ class EntityNormalizer
         $prefix = $key->getPrefix();
 
         $classMetadata = $this->metadataLoader->getClassMetadata($entity::class);
-        $finalValue = $prefix;
+        $finalValue = $prefix ?? '';
 
         foreach ($definedFields as $field) {
-            if (false === $classMetadata->offsetExists($field)) {
+            if (false === $classMetadata->has($field)) {
                 throw new InvalidFieldException(
                     sprintf(
                         'Field "%s" defined in Sort Key is invalid. Are you sure it exists in the entity class?',
@@ -211,7 +223,7 @@ class EntityNormalizer
             }
 
             /** @var ReflectionProperty $reflectionProperty */
-            $reflectionProperty = $classMetadata->offsetGet($field);
+            $reflectionProperty = $classMetadata->get($field);
             $propertyValue = $reflectionProperty->getValue($entity);
 
             /** @var scalar $currentFieldValue */
@@ -224,7 +236,8 @@ class EntityNormalizer
     }
 
     /**
-     * @param class-string $class
+     * @template T of object
+     * @param class-string<T> $class
      * @param array<string, mixed> $valuesByField
      * @throws ReflectionException
      * @throws ExceptionInterface
@@ -246,7 +259,7 @@ class EntityNormalizer
             }
         }
 
-        $allFieldsProvided = empty(array_diff_key($valuesByFieldSorted, array_flip($definedFields)));
+        $allFieldsProvided = empty(array_diff_key(array_flip($definedFields), $valuesByFieldSorted));
 
         if (false === $allFieldsProvided) {
             throw new InvalidFieldException(
@@ -258,7 +271,7 @@ class EntityNormalizer
         $finalValue = $prefix ?? '';
 
         foreach ($valuesByFieldSorted as $field => $value) {
-            if (false === $classMetadata->offsetExists($field)) {
+            if (false === $classMetadata->has($field)) {
                 throw new InvalidFieldException(
                     sprintf('Field "%s" is invalid. Are you sure it exists in the entity class?', $field)
                 );
@@ -280,7 +293,8 @@ class EntityNormalizer
     }
 
     /**
-     * @param class-string $class
+     * @template T of object
+     * @param class-string<T> $class
      * @param array<string, mixed> $valuesByField
      * @throws ReflectionException
      * @throws ExceptionInterface
@@ -307,11 +321,19 @@ class EntityNormalizer
             }
         }
 
+        $allFieldsProvided = empty(array_diff_key(array_flip($definedFields), $valuesByFieldSorted));
+
+        if (false === $allFieldsProvided) {
+            throw new InvalidFieldException(
+                'Provided Sort Key fields do not match the ones defined in the entity'
+            );
+        }
+
         $classMetadata = $this->metadataLoader->getClassMetadata($class);
         $finalValue = $prefix ?? '';
 
         foreach ($valuesByFieldSorted as $field => $value) {
-            if (false === $classMetadata->offsetExists($field)) {
+            if (false === $classMetadata->has($field)) {
                 throw new InvalidFieldException(
                     sprintf('Field "%s" is invalid. Are you sure it exists in the entity class?', $field)
                 );
@@ -327,6 +349,8 @@ class EntityNormalizer
     }
 
     /**
+     * @template T of object
+     * @param T $entity
      * @return array<string, mixed>
      * @throws ReflectionException
      * @throws ExceptionInterface
@@ -341,7 +365,7 @@ class EntityNormalizer
         $attributes = [];
 
         foreach ($propertyAttributes as $prop => $attr) {
-            $reflectionProperty = $classMetadata->offsetGet($prop);
+            $reflectionProperty = $classMetadata->get($prop);
             $propertyValue = $reflectionProperty?->getValue($entity);
             $attributes[$attr->name ?: $prop] = $this->normalizer->normalize($propertyValue);
         }

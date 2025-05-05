@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace EduardoMarques\DynamoPHP\Metadata;
 
-use ArrayAccess;
 use ReflectionProperty;
 
-/**
- * @implements ArrayAccess<string, ReflectionProperty>
- */
-class ClassMetadata implements ArrayAccess
+final readonly class ClassMetadata
 {
     public function __construct(
         /** @var array<string, ReflectionProperty> */
@@ -18,36 +14,13 @@ class ClassMetadata implements ArrayAccess
     ) {
     }
 
-    /**
-     * @param string $offset
-     */
-    public function offsetExists(mixed $offset): bool
+    public function has(string $property): bool
     {
-        return isset($this->properties[$offset]);
+        return isset($this->properties[$property]);
     }
 
-    /**
-     * @param string $offset
-     */
-    public function offsetGet(mixed $offset): ?ReflectionProperty
+    public function get(string $property): ?ReflectionProperty
     {
-        return $this->properties[$offset] ?? null;
-    }
-
-    /**
-     * @param string $offset
-     * @param ReflectionProperty $value
-     */
-    public function offsetSet(mixed $offset, mixed $value): void
-    {
-        $this->properties[$offset] = $value;
-    }
-
-    /**
-     * @param string $offset
-     */
-    public function offsetUnset(mixed $offset): void
-    {
-        unset($this->properties[$offset]);
+        return $this->properties[$property] ?? null;
     }
 }

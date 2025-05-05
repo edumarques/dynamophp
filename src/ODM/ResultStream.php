@@ -6,15 +6,21 @@ namespace EduardoMarques\DynamoPHP\ODM;
 
 use Generator;
 
-class ResultStream
+/**
+ * @template T
+ */
+readonly class ResultStream
 {
+    /**
+     * @param Generator<T> $items
+     */
     public function __construct(
         protected Generator $items,
     ) {
     }
 
     /**
-     * @return Generator|array<string, mixed>
+     * @return Generator<T>|array<T>
      */
     public function getItems(bool $asArray = false): iterable
     {

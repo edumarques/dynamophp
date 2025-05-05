@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace EduardoMarques\DynamoPHP\Metadata;
 
+use EduardoMarques\DynamoPHP\Attribute\AbstractKey;
 use EduardoMarques\DynamoPHP\Attribute\Attribute;
 use EduardoMarques\DynamoPHP\Attribute\Entity;
-use EduardoMarques\DynamoPHP\Attribute\KeyInterface;
 
-class EntityMetadata
+final readonly class EntityMetadata
 {
     public function __construct(
         protected Entity $entityAttribute,
@@ -22,12 +22,12 @@ class EntityMetadata
         return $this->entityAttribute->table;
     }
 
-    public function getPartitionKey(): KeyInterface
+    public function getPartitionKey(): AbstractKey
     {
         return $this->entityAttribute->partitionKey;
     }
 
-    public function getSortKey(): ?KeyInterface
+    public function getSortKey(): ?AbstractKey
     {
         return $this->entityAttribute->sortKey;
     }

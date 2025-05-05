@@ -9,12 +9,14 @@ use EduardoMarques\DynamoPHP\Metadata\MetadataLoader;
 use EduardoMarques\DynamoPHP\Serializer\EntityDenormalizer;
 use EduardoMarques\DynamoPHP\Serializer\EntityNormalizer;
 use EduardoMarques\DynamoPHP\Serializer\EntitySerializer;
+use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
+use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\Serializer\Normalizer\BackedEnumNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 
-class EntityManagerFactory
+readonly class EntityManagerFactory
 {
     /**
      * @param array<string, mixed> $dbClientOptions
@@ -22,14 +24,16 @@ class EntityManagerFactory
      */
     public static function create(array $dbClientOptions, array $options = []): EntityManager
     {
-        $datetimeFormat = $options[EntityNormalizer::DATETIME_FORMAT_KEY] ?? 'Y-m-d\TH:i:s.v\Z';
+        $datetimeFormat = $options[EntityNormalizer::DATETIME_FORMAT_KEY] ?? 'Y-m-d\TH:i:s.u\Z';
 
         $dynamoDbClient = new DynamoDbClient($dbClientOptions);
         $metadataLoader = new MetadataLoader();
         $serializer = new Serializer([
-            new DateTimeNormalizer([DateTimeNormalizer::FORMAT_KEY => $datetimeFormat]),
             new BackedEnumNormalizer(),
-            new ObjectNormalizer(),
+            new DateTimeNormalizer([DateTimeNormalizer::FORMAT_KEY => $datetimeFormat]),
+            new ObjectNormalizer(
+                propertyTypeExtractor: new PropertyInfoExtractor(typeExtractors: [new ReflectionExtractor()]),
+            ),
         ]);
 
         $normalizer = new EntityNormalizer($metadataLoader, $serializer);

@@ -10,7 +10,7 @@ use ReflectionException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
-class EntityDenormalizer
+final readonly class EntityDenormalizer
 {
     public function __construct(
         protected MetadataLoader $metadataLoader,
@@ -19,35 +19,29 @@ class EntityDenormalizer
     }
 
     /**
-     * @param array<string, array<mixed, mixed>> $item
+     * @template T of object
+     * @param array<string, mixed> $data
      * @param class-string $class
+     * @return T
      * @throws ExceptionInterface
      * @throws ReflectionException
      * @throws MetadataException
      */
-    public function denormalize(array $item, string $class): object
-    {
-        return $this->denormalizeAttributes($item, $class);
-    }
-
-    /**
-     * @param array<string, mixed> $item
-     * @param class-string $class
-     * @throws ReflectionException
-     * @throws ExceptionInterface
-     * @throws MetadataException
-     */
-    protected function denormalizeAttributes(array $item, string $class): object
+    public function denormalize(array $data, string $class): object
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
         $propertyAttributes = $entityMetadata->getPropertyAttributes();
 
-        $normalizedItem = [];
+        $normalizedData = [];
 
         foreach ($propertyAttributes as $prop => $attr) {
-            $normalizedItem[$prop] = $item[$attr->name ?: $prop] ?? null;
+            $value = $data[$attr->name ?: $prop] ?? null;
+
+            if (null !== $value) {
+                $normalizedData[$prop] = $value;
+            }
         }
 
-        return $this->denormalizer->denormalize($normalizedItem, $class);
+        return $this->denormalizer->denormalize($normalizedData, $class);
     }
 }

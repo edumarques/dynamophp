@@ -9,7 +9,7 @@ use EduardoMarques\DynamoPHP\Metadata\MetadataException;
 use ReflectionException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
-class EntitySerializer
+readonly class EntitySerializer
 {
     protected Marshaler $marshaler;
 
@@ -21,6 +21,8 @@ class EntitySerializer
     }
 
     /**
+     * @template T of object
+     * @param T $entity
      * @return array<string, array<mixed, mixed>>
      * @throws ExceptionInterface
      * @throws MetadataException
@@ -28,13 +30,14 @@ class EntitySerializer
      */
     public function serialize(object $entity, bool $includePrimaryKey = true): array
     {
-        $normalized = $this->entityNormalizer->normalize($entity, $includePrimaryKey);
+        $normalizedEntity = $this->entityNormalizer->normalize($entity, $includePrimaryKey);
 
-        return $this->marshaler->marshalItem($normalized);
+        return $this->marshaler->marshalItem($normalizedEntity);
     }
 
     /**
-     * @param object|class-string $entity
+     * @template T of object
+     * @param T|class-string<T> $entity
      * @param array<string, mixed> $keyFieldValues
      * @return array<string, string>
      * @throws ReflectionException
@@ -43,23 +46,24 @@ class EntitySerializer
      */
     public function serializePrimaryKey(object|string $entity, array $keyFieldValues = []): array
     {
-        $normalized = $this->entityNormalizer->normalizePrimaryKey($entity, $keyFieldValues);
+        $normalizedEntity = $this->entityNormalizer->normalizePrimaryKey($entity, $keyFieldValues);
 
-        return $this->marshaler->marshalItem($normalized);
+        return $this->marshaler->marshalItem($normalizedEntity);
     }
 
     /**
-     * @param array<string, array<mixed, mixed>> $item
-     * @param class-string $class
+     * @template T of object
+     * @param array<string, array<mixed, mixed>> $data
+     * @param class-string<T> $class
      * @throws ExceptionInterface
      * @throws ReflectionException
      * @throws MetadataException
      */
-    public function deserialize(array $item, string $class): object
+    public function deserialize(array $data, string $class): object
     {
-        /** @var array<string, mixed> $normalized */
-        $normalized = $this->marshaler->unmarshalItem($item);
+        /** @var array<string, mixed> $normalizedData */
+        $normalizedData = $this->marshaler->unmarshalItem($data);
 
-        return $this->entityDenormalizer->denormalize($normalized, $class);
+        return $this->entityDenormalizer->denormalize($normalizedData, $class);
     }
 }
