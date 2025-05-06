@@ -1,6 +1,6 @@
 {
   "name": "edumarques/dynamophp",
-  "description": "DynamoPHP is a lightweight, type-safe ODM for AWS DynamoDB, built specifically for PHP.",
+  "description": "DynamoPHP is a lightweight, strongly-typed Object Data Mapper designed to simplify development with Amazon DynamoDB.",
   "license": "MIT",
   "authors": [
     {
