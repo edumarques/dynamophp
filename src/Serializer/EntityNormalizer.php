@@ -36,23 +36,12 @@ final readonly class EntityNormalizer
     public function normalize(object $entity, bool $includePrimaryKey = true): array
     {
         $primaryKey = $includePrimaryKey ? $this->normalizePrimaryKey($entity) : [];
-        $attributes = $this->normalizeAttributes($entity);
-        $indexes = $this->normalizeIndexesFromEntity($entity);
 
-        $item = [...$primaryKey, ...$attributes];
-
-        $overlappingIndexFields = array_intersect_key($indexes, $item);
-
-        if (false === empty($overlappingIndexFields)) {
-            throw new InvalidEntityException(
-                sprintf(
-                    'Index attributes cannot have overlap other item attributes: %s',
-                    json_encode(array_keys($overlappingIndexFields))
-                )
-            );
-        }
-
-        return [...$item, ...$indexes];
+        return [
+            ...$primaryKey,
+            ...$this->normalizeAttributes($entity),
+            ...$this->normalizeIndexesFromEntity($entity),
+        ];
     }
 
     /**
@@ -371,19 +360,10 @@ final readonly class EntityNormalizer
         $normalized = [];
 
         foreach ($indexes as $index) {
-            $currentNormalized = $this->normalizeIndexFromEntity($entity, $index);
-            $overlappingKeys = array_intersect_key($currentNormalized, $normalized);
-
-            if (false === empty($overlappingKeys)) {
-                throw new InvalidEntityException(
-                    sprintf(
-                        'Index attributes cannot overlap other index attributes: %s',
-                        json_encode(array_keys($overlappingKeys))
-                    )
-                );
-            }
-
-            $normalized = [...$normalized, ...$currentNormalized];
+            $normalized = [
+                ...$normalized,
+                ...$this->normalizeIndexFromEntity($entity, $index),
+            ];
         }
 
         return $normalized;

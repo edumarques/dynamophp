@@ -20,10 +20,15 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
     indexes: [
         new GlobalIndex(
             name: 'GSI1',
-            partitionKey: new PartitionKey(fields: ['name'], name: 'GSI1_PK'),
-            sortKey: new SortKey(fields: ['id'], name: 'GSI1_SK')
+            partitionKey: new PartitionKey(fields: ['type'], name: 'type'),
+            sortKey: new SortKey(fields: ['creationDate', 'id'], name: 'creationDateId')
         ),
-        new LocalIndex(name: 'LSI1', sortKey: new SortKey(fields: ['name'], name: 'LSI1_SK')),
+        new GlobalIndex(
+            name: 'GSI2',
+            partitionKey: new PartitionKey(fields: ['type'], name: 'type'),
+            sortKey: new SortKey(fields: ['name'], name: 'name')
+        ),
+        new LocalIndex(name: 'LSI1', sortKey: new SortKey(fields: ['name'], name: 'name')),
     ]
 )]
 final class EntityC
@@ -32,8 +37,8 @@ final class EntityC
     #[SerializedName('fullName')]
     public string $name;
 
-    #[Attribute(name: 'type')]
-    public EnumA $enumA = EnumA::TYPE_A;
+    #[Attribute]
+    public EnumA $type = EnumA::TYPE_A;
 
     public EntityB $b;
 

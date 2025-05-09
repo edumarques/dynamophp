@@ -13,6 +13,7 @@ use EduardoMarques\DynamoPHP\ODM\ScanArgs;
 use EduardoMarques\DynamoPHP\Tests\Integration\Stubs\EntityA;
 use EduardoMarques\DynamoPHP\Tests\Integration\Stubs\EntityB;
 use EduardoMarques\DynamoPHP\Tests\Integration\Stubs\EntityC;
+use EduardoMarques\DynamoPHP\Tests\Integration\Stubs\EnumA;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -169,10 +170,11 @@ final class EntityManagerTest extends TestCase
 
         $queryArgs = (new QueryArgs())
             ->indexName('LSI1')
-            ->keyConditionExpression('PK = :pk AND begins_with(LSI1_SK, :sk)')
+            ->keyConditionExpression('PK = :pk AND begins_with(#name, :name)')
+            ->expressionAttributeNames(['#name' => 'name'])
             ->expressionAttributeValues([
                 ':pk' => $id1,
-                ':sk' => 'J',
+                ':name' => 'J',
             ]);
 
         $result = self::$entityManager->query(EntityC::class, $queryArgs);
@@ -195,10 +197,11 @@ final class EntityManagerTest extends TestCase
 
         $queryArgs = (new QueryArgs())
             ->indexName('GSI1')
-            ->keyConditionExpression('GSI1_PK = :pk AND begins_with(GSI1_SK, :sk)')
+            ->keyConditionExpression('#type = :type AND begins_with(creationDateId, :creationDateId)')
+            ->expressionAttributeNames(['#type' => 'type'])
             ->expressionAttributeValues([
-                ':pk' => 'John Doe',
-                ':sk' => '879',
+                ':type' => EnumA::TYPE_A,
+                ':creationDateId' => '2025',
             ]);
 
         $result = self::$entityManager->query(EntityC::class, $queryArgs);

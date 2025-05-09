@@ -38,9 +38,9 @@ services:
       DYNAMODB_TABLE_ATTRIBUTE_DEFINITIONS: "AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S"
       DYNAMODB_TABLE_INDEX_NAME: test-table-index
       DYNAMODB_TABLE_INDEX_KEY_SCHEMA: "AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE"
-      DYNAMODB_TABLE_INDEX_ATTRIBUTE_DEFINITIONS: 'AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S AttributeName=GSI1_PK,AttributeType=S AttributeName=GSI1_SK,AttributeType=S AttributeName=LSI1_SK,AttributeType=S'
-      DYNAMODB_TABLE_INDEX_LSI_DEFINITIONS: '[{"IndexName":"LSI1","KeySchema":[{"AttributeName":"PK","KeyType":"HASH"}, {"AttributeName":"LSI1_SK","KeyType":"RANGE"}],"Projection":{"ProjectionType":"ALL"}}]'
-      DYNAMODB_TABLE_INDEX_GSI_DEFINITIONS: '[{"IndexName":"GSI1","KeySchema":[{"AttributeName":"GSI1_PK","KeyType":"HASH"}, {"AttributeName":"GSI1_SK","KeyType":"RANGE"}],"Projection":{"ProjectionType":"ALL"},"ProvisionedThroughput":{"ReadCapacityUnits":5,"WriteCapacityUnits":5}}]'
+      DYNAMODB_TABLE_INDEX_ATTRIBUTE_DEFINITIONS: 'AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S AttributeName=name,AttributeType=S AttributeName=type,AttributeType=S AttributeName=creationDateId,AttributeType=S'
+      DYNAMODB_TABLE_INDEX_LSI_DEFINITIONS: '[{"IndexName":"LSI1","KeySchema":[{"AttributeName":"PK","KeyType":"HASH"}, {"AttributeName":"name","KeyType":"RANGE"}],"Projection":{"ProjectionType":"ALL"}}]'
+      DYNAMODB_TABLE_INDEX_GSI_DEFINITIONS: '[{"IndexName":"GSI1","KeySchema":[{"AttributeName":"type","KeyType":"HASH"}, {"AttributeName":"creationDateId","KeyType":"RANGE"}], "Projection":{"ProjectionType":"ALL"},"ProvisionedThroughput":{"ReadCapacityUnits":5,"WriteCapacityUnits":5}}, {"IndexName":"GSI2","KeySchema":[{"AttributeName":"type","KeyType":"HASH"}, {"AttributeName":"name","KeyType":"RANGE"}], "Projection":{"ProjectionType":"ALL"},"ProvisionedThroughput":{"ReadCapacityUnits":5,"WriteCapacityUnits":5}}]'
       DYNAMODB_SHARE_DB: 1
     volumes:
       - .docker/localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh
