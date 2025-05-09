@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EduardoMarques\DynamoPHP\Metadata;
 
+use EduardoMarques\DynamoPHP\Attribute\AbstractIndex;
 use EduardoMarques\DynamoPHP\Attribute\AbstractKey;
 use EduardoMarques\DynamoPHP\Attribute\Attribute;
 use EduardoMarques\DynamoPHP\Attribute\Entity;
@@ -30,6 +31,14 @@ final readonly class EntityMetadata
     public function getSortKey(): ?AbstractKey
     {
         return $this->entityAttribute->sortKey;
+    }
+
+    /**
+     * @return array<int, AbstractIndex>
+     */
+    public function getIndexes(): array
+    {
+        return $this->entityAttribute->indexes;
     }
 
     /**

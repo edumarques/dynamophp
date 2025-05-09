@@ -12,6 +12,7 @@ use EduardoMarques\DynamoPHP\ODM\QueryArgs;
 use EduardoMarques\DynamoPHP\ODM\ScanArgs;
 use EduardoMarques\DynamoPHP\Tests\Integration\Stubs\EntityA;
 use EduardoMarques\DynamoPHP\Tests\Integration\Stubs\EntityB;
+use EduardoMarques\DynamoPHP\Tests\Integration\Stubs\EntityC;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -153,6 +154,58 @@ final class EntityManagerTest extends TestCase
         self::$entityManager->delete($entity1);
         self::$entityManager->delete($entity2);
         self::$entityManager->delete($entity3);
+    }
+
+    #[Test]
+    public function itQueriesEntitiesOnLocalIndex(): void
+    {
+        $id1 = '8798b91f-fe8e-498c-8145-c757029346ef';
+        $creationDate1 = new DateTime('2025-01-02');
+        $entity1 = new EntityC($id1);
+        $entity1->name = 'John Doe';
+        $entity1->creationDate = $creationDate1;
+
+        self::$entityManager->put($entity1);
+
+        $queryArgs = (new QueryArgs())
+            ->indexName('LSI1')
+            ->keyConditionExpression('PK = :pk AND begins_with(LSI1_SK, :sk)')
+            ->expressionAttributeValues([
+                ':pk' => $id1,
+                ':sk' => 'J',
+            ]);
+
+        $result = self::$entityManager->query(EntityC::class, $queryArgs);
+
+        $this->assertEquals([$entity1], $result->getResult(true));
+
+        self::$entityManager->delete($entity1);
+    }
+
+    #[Test]
+    public function itQueriesEntitiesOnGlobalIndex(): void
+    {
+        $id1 = '8798b91f-fe8e-498c-8145-c757029346ef';
+        $creationDate1 = new DateTime('2025-01-02');
+        $entity1 = new EntityC($id1);
+        $entity1->name = 'John Doe';
+        $entity1->creationDate = $creationDate1;
+
+        self::$entityManager->put($entity1);
+
+        $queryArgs = (new QueryArgs())
+            ->indexName('GSI1')
+            ->keyConditionExpression('GSI1_PK = :pk AND begins_with(GSI1_SK, :sk)')
+            ->expressionAttributeValues([
+                ':pk' => 'John Doe',
+                ':sk' => '879',
+            ]);
+
+        $result = self::$entityManager->query(EntityC::class, $queryArgs);
+
+        $this->assertEquals([$entity1], $result->getResult(true));
+
+        self::$entityManager->delete($entity1);
     }
 
     #[Test]

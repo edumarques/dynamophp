@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace EduardoMarques\DynamoPHP\Serializer;
 
+use EduardoMarques\DynamoPHP\Attribute\AbstractIndex;
+use EduardoMarques\DynamoPHP\Attribute\AbstractKey;
+use EduardoMarques\DynamoPHP\Attribute\GlobalIndex;
+use EduardoMarques\DynamoPHP\Attribute\LocalIndex;
 use EduardoMarques\DynamoPHP\Metadata\MetadataException;
 use EduardoMarques\DynamoPHP\Metadata\MetadataLoader;
 use ReflectionException;
@@ -32,11 +36,23 @@ final readonly class EntityNormalizer
     public function normalize(object $entity, bool $includePrimaryKey = true): array
     {
         $primaryKey = $includePrimaryKey ? $this->normalizePrimaryKey($entity) : [];
+        $attributes = $this->normalizeAttributes($entity);
+        $indexes = $this->normalizeIndexesFromEntity($entity);
 
-        return [
-            ...$primaryKey,
-            ...$this->normalizeAttributes($entity),
-        ];
+        $item = [...$primaryKey, ...$attributes];
+
+        $overlappingIndexFields = array_intersect_key($indexes, $item);
+
+        if (false === empty($overlappingIndexFields)) {
+            throw new InvalidEntityException(
+                sprintf(
+                    'Index attributes cannot have overlap other item attributes: %s',
+                    json_encode(array_keys($overlappingIndexFields))
+                )
+            );
+        }
+
+        return [...$item, ...$indexes];
     }
 
     /**
@@ -159,34 +175,8 @@ final readonly class EntityNormalizer
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($entity::class);
         $key = $entityMetadata->getPartitionKey();
-        $definedFields = $key->getFields();
-        $delimiter = $key->getDelimiter();
-        $prefix = $key->getPrefix();
 
-        $classMetadata = $this->metadataLoader->getClassMetadata($entity::class);
-        $finalValue = $prefix ?? '';
-
-        foreach ($definedFields as $field) {
-            if (false === $classMetadata->has($field)) {
-                throw new InvalidFieldException(
-                    sprintf(
-                        'Field "%s" defined in Partition Key is invalid. Are you sure it exists in the entity class?',
-                        $field
-                    )
-                );
-            }
-
-            /** @var ReflectionProperty $reflectionProperty */
-            $reflectionProperty = $classMetadata->get($field);
-            $propertyValue = $reflectionProperty->getValue($entity);
-
-            /** @var scalar $currentFieldValue */
-            $currentFieldValue = $this->normalizer->normalize($propertyValue);
-
-            $finalValue .= empty($finalValue) ? $currentFieldValue : $delimiter . $currentFieldValue;
-        }
-
-        return $finalValue;
+        return $this->normalizeKeyValueFromEntity($entity, $key);
     }
 
     /**
@@ -205,6 +195,17 @@ final readonly class EntityNormalizer
             return null;
         }
 
+        return $this->normalizeKeyValueFromEntity($entity, $key);
+    }
+
+    /**
+     * @template T of object
+     * @param T $entity
+     * @throws ReflectionException
+     * @throws ExceptionInterface
+     */
+    protected function normalizeKeyValueFromEntity(object $entity, AbstractKey $key): string
+    {
         $definedFields = $key->getFields();
         $delimiter = $key->getDelimiter();
         $prefix = $key->getPrefix();
@@ -216,8 +217,9 @@ final readonly class EntityNormalizer
             if (false === $classMetadata->has($field)) {
                 throw new InvalidFieldException(
                     sprintf(
-                        'Field "%s" defined in Sort Key is invalid. Are you sure it exists in the entity class?',
-                        $field
+                        'Field "%s" defined in %s is invalid. Are you sure it exists in the entity class?',
+                        $field,
+                        $key::class
                     )
                 );
             }
@@ -247,6 +249,42 @@ final readonly class EntityNormalizer
     {
         $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
         $key = $entityMetadata->getPartitionKey();
+
+        return $this->normalizeKeyValueFromArray($class, $valuesByField, $key);
+    }
+
+    /**
+     * @template T of object
+     * @param class-string<T> $class
+     * @param array<string, mixed> $valuesByField
+     * @throws ReflectionException
+     * @throws ExceptionInterface
+     * @throws MetadataException
+     */
+    protected function normalizeSortKeyValueFromArray(string $class, array $valuesByField): ?string
+    {
+        $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
+        $key = $entityMetadata->getSortKey();
+
+        if (null === $key) {
+            return null;
+        }
+
+        return $this->normalizeKeyValueFromArray($class, $valuesByField, $key);
+    }
+
+    /**
+     * @template T of object
+     * @param class-string<T> $class
+     * @param array<string, mixed> $valuesByField
+     * @throws ReflectionException
+     * @throws ExceptionInterface
+     */
+    protected function normalizeKeyValueFromArray(
+        string $class,
+        array $valuesByField,
+        AbstractKey $key,
+    ): string {
         $definedFields = $key->getFields();
         $delimiter = $key->getDelimiter();
         $prefix = $key->getPrefix();
@@ -294,62 +332,6 @@ final readonly class EntityNormalizer
 
     /**
      * @template T of object
-     * @param class-string<T> $class
-     * @param array<string, mixed> $valuesByField
-     * @throws ReflectionException
-     * @throws ExceptionInterface
-     * @throws MetadataException
-     */
-    protected function normalizeSortKeyValueFromArray(string $class, array $valuesByField): ?string
-    {
-        $entityMetadata = $this->metadataLoader->getEntityMetadata($class);
-        $key = $entityMetadata->getSortKey();
-
-        if (null === $key) {
-            return null;
-        }
-
-        $definedFields = $key->getFields();
-        $delimiter = $key->getDelimiter();
-        $prefix = $key->getPrefix();
-
-        $valuesByFieldSorted = [];
-
-        foreach ($definedFields as $field) {
-            if (isset($valuesByField[$field])) {
-                $valuesByFieldSorted[$field] = $valuesByField[$field];
-            }
-        }
-
-        $allFieldsProvided = empty(array_diff_key(array_flip($definedFields), $valuesByFieldSorted));
-
-        if (false === $allFieldsProvided) {
-            throw new InvalidFieldException(
-                'Provided Sort Key fields do not match the ones defined in the entity'
-            );
-        }
-
-        $classMetadata = $this->metadataLoader->getClassMetadata($class);
-        $finalValue = $prefix ?? '';
-
-        foreach ($valuesByFieldSorted as $field => $value) {
-            if (false === $classMetadata->has($field)) {
-                throw new InvalidFieldException(
-                    sprintf('Field "%s" is invalid. Are you sure it exists in the entity class?', $field)
-                );
-            }
-
-            /** @var scalar $currentFieldValue */
-            $currentFieldValue = $this->normalizer->normalize($value);
-
-            $finalValue .= empty($finalValue) ? $currentFieldValue : $delimiter . $currentFieldValue;
-        }
-
-        return $finalValue;
-    }
-
-    /**
-     * @template T of object
      * @param T $entity
      * @return array<string, mixed>
      * @throws ReflectionException
@@ -371,5 +353,75 @@ final readonly class EntityNormalizer
         }
 
         return $attributes;
+    }
+
+    /**
+     * @template T of object
+     * @param T $entity
+     * @return array<string, string>
+     * @throws ReflectionException
+     * @throws ExceptionInterface
+     * @throws MetadataException
+     */
+    protected function normalizeIndexesFromEntity(object $entity): array
+    {
+        $entityMetadata = $this->metadataLoader->getEntityMetadata($entity::class);
+        $indexes = $entityMetadata->getIndexes();
+
+        $normalized = [];
+
+        foreach ($indexes as $index) {
+            $currentNormalized = $this->normalizeIndexFromEntity($entity, $index);
+            $overlappingKeys = array_intersect_key($currentNormalized, $normalized);
+
+            if (false === empty($overlappingKeys)) {
+                throw new InvalidEntityException(
+                    sprintf(
+                        'Index attributes cannot overlap other index attributes: %s',
+                        json_encode(array_keys($overlappingKeys))
+                    )
+                );
+            }
+
+            $normalized = [...$normalized, ...$currentNormalized];
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @template T of object
+     * @param T $entity
+     * @return array<string, string>
+     * @throws ReflectionException
+     * @throws ExceptionInterface
+     */
+    protected function normalizeIndexFromEntity(object $entity, AbstractIndex $index): array
+    {
+        /** @var LocalIndex|GlobalIndex $index */
+        $sortKey = $index->sortKey;
+
+        $sortKeyNormalized = null !== $sortKey
+            ? [$sortKey->getName() => $this->normalizeKeyValueFromEntity($entity, $sortKey)]
+            : [];
+
+        if ($index instanceof LocalIndex) {
+            return $sortKeyNormalized;
+        }
+
+        /** @var GlobalIndex $index */
+        $partitionKey = $index->partitionKey;
+        $partitionKeyName = $partitionKey->getName();
+
+        if (isset($sortKeyNormalized[$partitionKeyName])) {
+            throw new InvalidEntityException(
+                sprintf('Keys within index "%s" cannot overlap each other: %s', $index->name, $partitionKeyName)
+            );
+        }
+
+        return [
+            ...$sortKeyNormalized,
+            $partitionKeyName => $this->normalizeKeyValueFromEntity($entity, $partitionKey),
+        ];
     }
 }

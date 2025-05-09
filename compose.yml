@@ -32,10 +32,15 @@ services:
       LOCALSTACK_PERSISTENCE: 1
       EXTRA_CORS_ALLOWED_ORIGINS: "*"
       DEBUG: 1
-      DYNAMODB_TABLE_NAME: test-table
       DYNAMODB_LOCAL_ENDPOINT: http://localstack:4566
+      DYNAMODB_TABLE_NAME: test-table
       DYNAMODB_TABLE_KEY_SCHEMA: "AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE"
       DYNAMODB_TABLE_ATTRIBUTE_DEFINITIONS: "AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S"
+      DYNAMODB_TABLE_INDEX_NAME: test-table-index
+      DYNAMODB_TABLE_INDEX_KEY_SCHEMA: "AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE"
+      DYNAMODB_TABLE_INDEX_ATTRIBUTE_DEFINITIONS: 'AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S AttributeName=GSI1_PK,AttributeType=S AttributeName=GSI1_SK,AttributeType=S AttributeName=LSI1_SK,AttributeType=S'
+      DYNAMODB_TABLE_INDEX_LSI_DEFINITIONS: '[{"IndexName":"LSI1","KeySchema":[{"AttributeName":"PK","KeyType":"HASH"}, {"AttributeName":"LSI1_SK","KeyType":"RANGE"}],"Projection":{"ProjectionType":"ALL"}}]'
+      DYNAMODB_TABLE_INDEX_GSI_DEFINITIONS: '[{"IndexName":"GSI1","KeySchema":[{"AttributeName":"GSI1_PK","KeyType":"HASH"}, {"AttributeName":"GSI1_SK","KeyType":"RANGE"}],"Projection":{"ProjectionType":"ALL"},"ProvisionedThroughput":{"ReadCapacityUnits":5,"WriteCapacityUnits":5}}]'
       DYNAMODB_SHARE_DB: 1
     volumes:
       - .docker/localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh
