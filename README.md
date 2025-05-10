@@ -14,18 +14,46 @@ API.
 Inspired by data mappers like [Doctrine](https://www.doctrine-project.org) and modeled after patterns in libraries such
 as [TypeDORM](https://github.com/typedorm/typedorm).
 
+## Features
+
+- **Entity Management:** automatically handles CRUD operations.
+- **Index Support:** work with Global Secondary Indexes (GSI) and Local Secondary Indexes (LSI).
+- **Query Builder:** build complex queries with minimal boilerplate.
+
 ## Installation
 
-```
+You can install **DynamoPHP** via Composer:
+
+```shell
 composer require edumarques/dynamophp
 ```
 
 ## Documentation
 
-Documentation is an ongoing effort. Our docs will continue to evolve as the project grows—contributions and
-improvements are welcome and encouraged!
+For detailed usage, please refer to the sections below.
+
+Quickly get started:
 
 - [Basic Usage Guide](docs/basic-guide.md)
+
+Learn how DynamoPHP works as an ODM for mapping your objects to DynamoDB:
+
+- [Object Data Mapping](docs/odm.md)
+
+Learn how to define and manage your entities:
+
+- [Entity](docs/entity.md)
+
+Learn how to use Global Secondary Indexes (GSI) and Local Secondary Indexes (LSI):
+
+- [Indexes](docs/indexes.md)
+
+Learn how the EntityManager is used for managing entities and interactions with DynamoDB:
+
+- [Entity Manager](docs/entity-manager.md)
+
+_Documentation is an ongoing effort. Our docs will continue to evolve as the project grows — contributions and
+improvements are welcome and encouraged!_
 
 ## Contributing
 
@@ -34,3 +62,8 @@ our [contribution guideline](CONTRIBUTING.md).
 
 For any questions, feel free to reach out to me directly by
 email: [eduardomarqs1@gmail.com](mailto:eduardomarqs1@gmail.com).
+
+## Integration
+
+For seamless integration with [Symfony](https://symfony.com) applications, a dedicated **Symfony Bundle** is
+available: [edumarques/dynamophp-symfony](https://github.com/edumarques/dynamophp-symfony).
