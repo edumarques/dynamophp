@@ -15,7 +15,7 @@ use ReflectionProperty;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-final readonly class EntityNormalizer
+readonly class EntityNormalizer
 {
     public const string DATETIME_FORMAT_KEY = EntityNormalizer::class . '_datetime_format';
 

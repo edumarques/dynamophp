@@ -10,7 +10,7 @@ use ReflectionException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
-final readonly class EntityDenormalizer
+readonly class EntityDenormalizer
 {
     public function __construct(
         protected MetadataLoader $metadataLoader,

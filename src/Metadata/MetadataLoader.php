@@ -11,10 +11,10 @@ use ReflectionClass;
 use ReflectionException;
 use ReflectionProperty;
 
-final class MetadataLoader
+class MetadataLoader
 {
     /** @var array<string, array<string, mixed>> */
-    private array $cache = [];
+    protected array $cache = [];
 
     /**
      * @template T of object

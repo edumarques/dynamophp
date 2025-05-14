@@ -6,7 +6,7 @@ namespace EduardoMarques\DynamoPHP\Metadata;
 
 use ReflectionProperty;
 
-final readonly class ClassMetadata
+readonly class ClassMetadata
 {
     public function __construct(
         /** @var array<string, ReflectionProperty> */

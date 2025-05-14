@@ -9,7 +9,7 @@ use EduardoMarques\DynamoPHP\Attribute\AbstractKey;
 use EduardoMarques\DynamoPHP\Attribute\Attribute;
 use EduardoMarques\DynamoPHP\Attribute\Entity;
 
-final readonly class EntityMetadata
+readonly class EntityMetadata
 {
     public function __construct(
         protected Entity $entityAttribute,
