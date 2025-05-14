@@ -30,6 +30,12 @@ final class EntityA
     #[Attribute(name: 'createdAt')]
     public DateTimeInterface $creationDate;
 
+    #[Attribute]
+    public ?string $nationality = null;
+
+    #[Attribute(ignoreIfNull: false)]
+    public ?DateTimeInterface $birthDate = null;
+
     public function __construct(
         #[Attribute]
         protected string $id,

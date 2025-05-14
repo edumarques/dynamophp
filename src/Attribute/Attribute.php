@@ -11,6 +11,7 @@ class Attribute
 {
     public function __construct(
         public ?string $name = null,
+        public bool $ignoreIfNull = true,
     ) {
     }
 }

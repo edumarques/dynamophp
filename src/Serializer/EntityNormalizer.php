@@ -338,7 +338,10 @@ readonly class EntityNormalizer
         foreach ($propertyAttributes as $prop => $attr) {
             $reflectionProperty = $classMetadata->get($prop);
             $propertyValue = $reflectionProperty?->getValue($entity);
-            $attributes[$attr->name ?: $prop] = $this->normalizer->normalize($propertyValue);
+
+            if (false === $attr->ignoreIfNull || null !== $propertyValue) {
+                $attributes[$attr->name ?: $prop] = $this->normalizer->normalize($propertyValue);
+            }
         }
 
         return $attributes;
