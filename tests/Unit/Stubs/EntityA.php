@@ -16,7 +16,7 @@ use Symfony\Component\Serializer\Attribute\SerializedName;
     partitionKey: new PartitionKey(['id']),
     sortKey: new SortKey(['creationDate'])
 )]
-final class EntityA
+class EntityA
 {
     #[Attribute]
     public int $id;

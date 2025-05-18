@@ -102,6 +102,12 @@ class MetadataLoader
     {
         $attributes = [];
 
+        $parentReflection = $reflection->getParentClass();
+
+        if ($parentReflection instanceof ReflectionClass) {
+            $attributes = $this->getClassAttributes($parentReflection);
+        }
+
         foreach ($reflection->getAttributes() as $attribute) {
             $instance = $attribute->newInstance();
             $attributes[$instance::class] = $instance;
@@ -118,6 +124,12 @@ class MetadataLoader
     private function getPropertyAttributes(ReflectionClass $reflection): array
     {
         $attributes = [];
+
+        $parentReflection = $reflection->getParentClass();
+
+        if ($parentReflection instanceof ReflectionClass) {
+            $attributes = $this->getPropertyAttributes($parentReflection);
+        }
 
         foreach ($reflection->getProperties() as $property) {
             $propertyAttributes = $property->getAttributes();

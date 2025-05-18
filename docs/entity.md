@@ -80,6 +80,11 @@ class User
 - **Property Mapping**: the **name** argument is used to map the property to a DynamoDB attribute. This argument is
   optional and, if not provided, DynamoPHP will use the property's name as DynamoDB attribute's name.
 
+## Inheritance
+
+**DynamoPHP** supports _PHP attribute inheritance_. So if you are leveraging class inheritance in your application,
+**DynamoPHP attributes** will also be passed down and inherited from parent to child classes.
+
 ## Best practices
 
 - **Define entities as simple value objects:** keep entities as lightweight as possible by using simple data types and

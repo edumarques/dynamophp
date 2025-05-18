@@ -9,6 +9,7 @@ use EduardoMarques\DynamoPHP\Metadata\MetadataException;
 use EduardoMarques\DynamoPHP\Metadata\MetadataLoader;
 use EduardoMarques\DynamoPHP\Tests\Unit\Stubs\ClassA;
 use EduardoMarques\DynamoPHP\Tests\Unit\Stubs\EntityA;
+use EduardoMarques\DynamoPHP\Tests\Unit\Stubs\EntityB;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
@@ -47,6 +48,32 @@ final class MetadataLoaderTest extends TestCase
         $this->assertInstanceOf(Attribute::class, $attributes[1]);
         $this->assertInstanceOf(Attribute::class, $attributes[2]);
         $this->assertInstanceOf(Attribute::class, $attributes[3]);
+
+        $this->assertNull($propertyAttributes['name']->name);
+        $this->assertSame('createdAt', $propertyAttributes['creationDate']->name);
+    }
+
+    #[Test]
+    public function itReturnsEntityMetadataMergedWithParent(): void
+    {
+        $metadata = $this->metadataLoader->getEntityMetadata(EntityB::class);
+
+        $this->assertSame('tests', $metadata->getTable());
+        $this->assertSame(['id'], $metadata->getPartitionKey()->getFields());
+        $this->assertSame(['creationDate'], $metadata->getSortKey()?->getFields());
+
+        $propertyAttributes = $metadata->getPropertyAttributes();
+        $properties = array_keys($propertyAttributes);
+        $attributes = array_values($propertyAttributes);
+
+        $this->assertSame(['id', 'name', 'creationDate', 'cardNumber', 'type'], $properties);
+        $this->assertInstanceOf(Attribute::class, $attributes[0]);
+        $this->assertInstanceOf(Attribute::class, $attributes[1]);
+        $this->assertInstanceOf(Attribute::class, $attributes[2]);
+        $this->assertInstanceOf(Attribute::class, $attributes[3]);
+
+        $this->assertSame('fullName', $propertyAttributes['name']->name);
+        $this->assertNull($propertyAttributes['creationDate']->name);
     }
 
     #[Test]
